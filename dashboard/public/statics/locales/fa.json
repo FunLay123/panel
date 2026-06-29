@@ -1072,6 +1072,10 @@
       "uplinkHttpMethod": "Uplink HTTP Method",
       "sessionPlacement": "Session Placement",
       "sessionKey": "Session Key",
+      "sessionIdTable": "جدول Session ID",
+      "sessionIdTablePlaceholder": "مثلاً Base62، HEX یا کاراکترهای دلخواه",
+      "sessionIdLength": "طول Session ID",
+      "sessionIdLengthPlaceholder": "مثلاً ۸ یا ۸-۱۶",
       "seqPlacement": "Seq Placement",
       "seqKey": "Seq Key",
       "uplinkDataPlacement": "Uplink Data Placement",
@@ -1795,7 +1799,10 @@
     "updating": "در حال به‌روزرسانی...",
     "updateAvailable": "به‌روزرسانی موجود است",
     "prerelease": "نسخه پیش‌انتشار",
-    "loadingReleases": "در حال بارگذاری نسخه‌ها..."
+    "loadingReleases": "در حال بارگذاری نسخه‌ها...",
+    "breakingChangeTitle": "تغییرات ناسازگار در Xray 26.6.22+",
+    "breakingChangeWarning": "از نسخه Xray 26.6.22 به بعد، پارامترهای xhttp یعنی «sessionPlacement» و «sessionKey» به «sessionIDPlacement» و «sessionIDKey» تغییر نام می‌یابند. پیکربندی‌های سرور هنگام نصب نسخه جدید به‌صورت خودکار مهاجرت می‌کنند. اما کاربرانی که در اشتراک‌های اینباند xhttp آن‌ها هنوز sessionPlacement/sessionKey وجود دارد، پس از به‌روزرسانی تا زمانی که اشتراک خود را دوباره وارد نکنند نمی‌توانند به سرور متصل شوند. ادامه می‌دهید؟",
+    "breakingChangeConfirm": "متوجه شدم، در هر صورت به‌روزرسانی شود"
   },
   "nodes": {
     "title": "گره‌ها",

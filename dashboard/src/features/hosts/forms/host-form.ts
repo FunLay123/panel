@@ -110,6 +110,8 @@ export interface HostFormValues {
       uplink_http_method?: string
       session_placement?: string
       session_key?: string
+      session_id_table?: string
+      session_id_length?: string
       seq_placement?: string
       seq_key?: string
       uplink_data_placement?: string
@@ -163,6 +165,45 @@ export interface HostFormValues {
   }
 }
 
+// sessionIDTable predefined aliases (from Xray-core) -> their character-set length.
+const PREDEFINED_TABLE_LENGTHS: Record<string, number> = {
+  ALPHABET: 26,
+  Alphabet: 52,
+  BASE36: 36,
+  Base62: 62,
+  HEX: 16,
+  alphabet: 26,
+  base36: 36,
+  hex: 16,
+  number: 10,
+}
+
+// Xray requires at least ~2.1B possible session IDs (Go: 2<<30).
+const ROOM_SIZE_THRESHOLD = 2 * 2 ** 30
+
+function sessionIdTableLength(table: string): number {
+  return PREDEFINED_TABLE_LENGTHS[table] ?? table.length
+}
+
+// Parse "from-to" (or a single "n") into [from, to].
+function parseLengthRange(value: string): [number, number] | null {
+  const match = value.match(/^(\d+)(?:-(\d+))?$/)
+  if (!match) return null
+  const from = Number(match[1])
+  const to = match[2] !== undefined ? Number(match[2]) : from
+  return [from, to]
+}
+
+// room = sum of tableLen^k for k in [from, to]. Short-circuits once over the threshold.
+function sessionIdRoomSize(tableLen: number, from: number, to: number): number {
+  let sum = 0
+  for (let k = from; k <= to; k++) {
+    sum += Math.pow(tableLen, k)
+    if (sum >= ROOM_SIZE_THRESHOLD) return sum
+  }
+  return sum
+}
+
 const transportSettingsSchema = z
   .object({
     xhttp_settings: z
@@ -178,6 +219,8 @@ const transportSettingsSchema = z
         uplink_http_method: z.string().nullish().optional(),
         session_placement: z.string().nullish().optional(),
         session_key: z.string().nullish().optional(),
+        session_id_table: z.string().nullish().optional(),
+        session_id_length: z.string().nullish().optional(),
         seq_placement: z.string().nullish().optional(),
         seq_key: z.string().nullish().optional(),
         uplink_data_placement: z.string().nullish().optional(),
@@ -197,6 +240,31 @@ const transportSettingsSchema = z
           })
           .nullish()
           .optional(),
+      })
+      .superRefine((data, ctx) => {
+        const table = data?.session_id_table
+        const length = data?.session_id_length
+        // Only validate when a custom session ID table is configured.
+        if (!table || !length) return
+        const range = parseLengthRange(length)
+        if (!range) return // format is checked by the field pattern elsewhere
+        const [from, to] = range
+        if (from <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['session_id_length'],
+            message: 'sessionIDLength must be greater than 0',
+          })
+          return
+        }
+        const room = sessionIdRoomSize(sessionIdTableLength(table), from, to)
+        if (room < ROOM_SIZE_THRESHOLD) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['session_id_length'],
+            message: 'Too few possible session IDs (must be at least ~2.1 billion). Increase the length range or use a larger character table.',
+          })
+        }
       })
       .nullish()
       .optional(),

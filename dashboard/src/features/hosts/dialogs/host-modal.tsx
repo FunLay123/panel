@@ -1975,6 +1975,34 @@ const HostModal: React.FC<HostModalProps> = ({ isDialogOpen, onOpenChange, onSub
 
                                 <FormField
                                   control={form.control}
+                                  name="transport_settings.xhttp_settings.session_id_table"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>{t('hostsDialog.xhttp.sessionIdTable', { defaultValue: 'Session ID Table' })}</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} value={field.value ?? ''} placeholder={t('hostsDialog.xhttp.sessionIdTablePlaceholder', { defaultValue: 'e.g. Base62, HEX, or custom characters' })} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name="transport_settings.xhttp_settings.session_id_length"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>{t('hostsDialog.xhttp.sessionIdLength', { defaultValue: 'Session ID Length' })}</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} value={field.value ?? ''} placeholder={t('hostsDialog.xhttp.sessionIdLengthPlaceholder', { defaultValue: 'e.g. 8 or 8-16' })} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
                                   name="transport_settings.xhttp_settings.seq_placement"
                                   render={({ field }) => (
                                     <FormItem>
