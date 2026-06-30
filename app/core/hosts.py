@@ -12,6 +12,7 @@ from app import on_shutdown, on_startup
 from app.core.manager import core_manager
 from app.db import GetDB
 from app.db.crud.host import get_host_by_id, get_hosts, upsert_inbounds
+from app.db.crud.node import get_xray_version_by_core_id
 from app.db.models import ProxyHostSecurity
 from app.models.host import BaseHost, TransportSettings, WireGuardHostOverrides
 from app.models.subscription import (
