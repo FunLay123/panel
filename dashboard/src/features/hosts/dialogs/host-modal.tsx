@@ -24,6 +24,73 @@ import { useTranslation } from 'react-i18next'
 import { hostFormDefaultValues, type HostFormValues } from '@/features/hosts/forms/host-form'
 import { LoaderButton } from '@/components/ui/loader-button'
 
+// Predefined sessionIDTable aliases recognized by Xray 26.6.22+.
+const SESSION_ID_TABLE_PRESETS = ['ALPHABET', 'Alphabet', 'BASE36', 'Base62', 'HEX', 'alphabet', 'base36', 'hex', 'number']
+
+// Select with predefined tables + a "Custom" option that reveals a free-text input.
+function SessionIdTableField({ control, t }: { control: any; t: (key: string, opts?: any) => string }) {
+  const [customMode, setCustomMode] = useState(false)
+  return (
+    <FormField
+      control={control}
+      name="transport_settings.xhttp_settings.session_id_table"
+      render={({ field }) => {
+        const value: string = field.value ?? ''
+        const isPreset = SESSION_ID_TABLE_PRESETS.includes(value)
+        const showCustom = customMode || (value !== '' && !isPreset)
+        const selectValue = showCustom ? '__custom' : value === '' ? '__default' : value
+        return (
+          <FormItem>
+            <FormLabel>{t('hostsDialog.xhttp.sessionIdTable', { defaultValue: 'Session ID Table' })}</FormLabel>
+            <Select
+              value={selectValue}
+              onValueChange={v => {
+                if (v === '__default') {
+                  setCustomMode(false)
+                  field.onChange(undefined)
+                } else if (v === '__custom') {
+                  setCustomMode(true)
+                  field.onChange('')
+                } else {
+                  setCustomMode(false)
+                  field.onChange(v)
+                }
+              }}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="__default">{t('hostsDialog.xhttp.defaultMode', { defaultValue: 'Use default' })}</SelectItem>
+                {SESSION_ID_TABLE_PRESETS.map(preset => (
+                  <SelectItem key={preset} value={preset}>
+                    {preset}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__custom">{t('hostsDialog.xhttp.customValue', { defaultValue: 'Custom' })}</SelectItem>
+              </SelectContent>
+            </Select>
+            {showCustom && (
+              <FormControl>
+                <Input
+                  className="mt-2"
+                  dir="ltr"
+                  value={value}
+                  onChange={e => field.onChange(e.target.value)}
+                  placeholder={t('hostsDialog.xhttp.sessionIdTableCustomPlaceholder', { defaultValue: 'Enter custom characters (ASCII)' })}
+                />
+              </FormControl>
+            )}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
+  )
+}
+
 interface HostModalProps {
   isDialogOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -1973,19 +2040,7 @@ const HostModal: React.FC<HostModalProps> = ({ isDialogOpen, onOpenChange, onSub
                                   )}
                                 />
 
-                                <FormField
-                                  control={form.control}
-                                  name="transport_settings.xhttp_settings.session_id_table"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>{t('hostsDialog.xhttp.sessionIdTable', { defaultValue: 'Session ID Table' })}</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} value={field.value ?? ''} placeholder={t('hostsDialog.xhttp.sessionIdTablePlaceholder', { defaultValue: 'e.g. Base62, HEX, or custom characters' })} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                                <SessionIdTableField control={form.control} t={t} />
 
                                 <FormField
                                   control={form.control}
