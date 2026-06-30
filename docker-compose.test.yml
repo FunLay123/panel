@@ -1,0 +1,23 @@
+# Isolated TEST instance — runs ALONGSIDE the production PasarGuard.
+# Separate port (8001), separate data dir, separate DB. Does NOT touch prod.
+# Build:  docker compose -f docker-compose.test.yml build
+# Up:     docker compose -f docker-compose.test.yml up -d
+# Logs:   docker compose -f docker-compose.test.yml logs -f
+services:
+  pasarguard-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      args:
+        # Relative "/" => dashboard calls the same origin it's served from.
+        # Works when you open http://SERVER_IP:8001/dashboard/ in the browser.
+        VITE_BASE_API: "/"
+    container_name: pasarguard-test
+    restart: unless-stopped
+    env_file: .env.test
+    ports:
+      # host:container — prod keeps 8000, this test instance is on 8001.
+      - "8001:8000"
+    volumes:
+      # Host dir is SEPARATE from prod's /var/lib/pasarguard.
+      - /var/lib/pasarguard-test:/var/lib/pasarguard

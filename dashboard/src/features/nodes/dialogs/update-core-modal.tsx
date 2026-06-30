@@ -31,7 +31,7 @@ function isAtLeast(version: string, target: number[]): boolean {
     if (parsed[i] > target[i]) return true
     if (parsed[i] < target[i]) return false
   }
-  return true // equal
+  return true
 }
 
 function isBreakingUpgrade(current: string | null | undefined, target: string): boolean {
