@@ -28,6 +28,7 @@ import { remapIndexAfterArrayMove } from '@/features/core-editor/kit/remap-index
 import { isPlaceholderTunnelRewriteAddress, normalizeTunnelNetworkForKit } from '@/features/core-editor/kit/sanitize-inbound'
 import { inferParityFieldMode, outboundSettingToString, parseOutboundSettingValue } from '@/features/core-editor/kit/xray-parity-value'
 import { useCoreEditorStore } from '@/features/core-editor/state/core-editor-store'
+import { isXrayVersionAtLeast, XRAY_FEATURE_GATES } from '@/lib/xray-version-gates'
 import useDirDetection from '@/hooks/use-dir-detection'
 import { cn } from '@/lib/utils'
 import {
@@ -908,6 +909,8 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
   const dir = useDirDetection()
   const profile = useCoreEditorStore(s => s.xrayProfile)
   const updateXrayProfile = useCoreEditorStore(s => s.updateXrayProfile)
+  const coreXrayVersion = useCoreEditorStore(s => s.coreXrayVersion)
+  const isEchForceQueryGated = isXrayVersionAtLeast(coreXrayVersion, XRAY_FEATURE_GATES.echForceQueryRemoved)
   const { assertNoPersistBlockingErrors } = useXrayPersistModifyGuard()
   const [selected, setSelected] = useState(0)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -2404,6 +2407,13 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
     const generatedEchConfig = mutateBase64Seed(DEFAULT_ECH_CONFIG)
     form.setValue(securityFieldName('echServerKeys'), generatedEchServerKey)
     form.setValue(securityFieldName('echConfigList'), generatedEchConfig)
+    if (isEchForceQueryGated) {
+      applyTlsEchPatch({
+        echServerKeys: generatedEchServerKey,
+        echConfigList: generatedEchConfig,
+      })
+      return
+    }
     if (echUsageOption === 'required') {
       form.setValue(securityFieldName('echForceQuery'), 'full')
       applyTlsEchPatch({
@@ -3953,36 +3963,38 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                                           </Select>
                                         </FormItem>
 
-                                        <FormField
-                                          control={form.control}
-                                          name={securityFieldName('echForceQuery')}
-                                          render={({ field }) => (
-                                            <FormItem className="w-full min-w-0">
-                                              <FormLabel className="text-muted-foreground text-xs font-medium">{t('coreEditor.inbound.ech.forceQuery', { defaultValue: 'ECH force query' })}</FormLabel>
-                                              <Select
-                                                value={field.value && String(field.value).trim() !== '' ? field.value : '__default'}
-                                                onValueChange={v => {
-                                                  const next = v === '__default' ? '' : v
-                                                  field.onChange(next)
-                                                  applyTlsEchPatch({ echForceQuery: next })
-                                                }}
-                                              >
-                                                <FormControl>
-                                                  <SelectTrigger className="h-10 w-full min-w-0">
-                                                    <SelectValue />
-                                                  </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                  <SelectItem value="__default">{t('coreEditor.inbound.ech.forceQueryDefault', { defaultValue: 'Default' })}</SelectItem>
-                                                  <SelectItem value="none">none</SelectItem>
-                                                  <SelectItem value="half">half</SelectItem>
-                                                  <SelectItem value="full">full</SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
+                                        {!isEchForceQueryGated && (
+                                          <FormField
+                                            control={form.control}
+                                            name={securityFieldName('echForceQuery')}
+                                            render={({ field }) => (
+                                              <FormItem className="w-full min-w-0">
+                                                <FormLabel className="text-muted-foreground text-xs font-medium">{t('coreEditor.inbound.ech.forceQuery', { defaultValue: 'ECH force query' })}</FormLabel>
+                                                <Select
+                                                  value={field.value && String(field.value).trim() !== '' ? field.value : '__default'}
+                                                  onValueChange={v => {
+                                                    const next = v === '__default' ? '' : v
+                                                    field.onChange(next)
+                                                    applyTlsEchPatch({ echForceQuery: next })
+                                                  }}
+                                                >
+                                                  <FormControl>
+                                                    <SelectTrigger className="h-10 w-full min-w-0">
+                                                      <SelectValue />
+                                                    </SelectTrigger>
+                                                  </FormControl>
+                                                  <SelectContent>
+                                                    <SelectItem value="__default">{t('coreEditor.inbound.ech.forceQueryDefault', { defaultValue: 'Default' })}</SelectItem>
+                                                    <SelectItem value="none">none</SelectItem>
+                                                    <SelectItem value="half">half</SelectItem>
+                                                    <SelectItem value="full">full</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        )}
 
                                         <FormField
                                           control={form.control}
