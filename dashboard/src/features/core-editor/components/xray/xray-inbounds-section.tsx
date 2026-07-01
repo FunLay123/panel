@@ -3408,6 +3408,8 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                             normalizedTransportKey === 'sessionkey' ||
                             normalizedTransportKey === 'sessionidplacement' ||
                             normalizedTransportKey === 'sessionidkey' ||
+                            normalizedTransportKey === 'sessionidtable' ||
+                            normalizedTransportKey === 'sessionidlength' ||
                             normalizedTransportKey === 'extra'
                           if (inboundTransportType === 'xhttp' && isXhttpCustomManagedField) return null
                           const isXPaddingAdvancedField =
