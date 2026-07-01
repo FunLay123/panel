@@ -1408,6 +1408,10 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
         xpaddingmethod: 'xPaddingMethod',
         sessionidtable: 'sessionIDTable',
         sessionidlength: 'sessionIDLength',
+        sessionplacement: 'sessionPlacement',
+        sessionkey: 'sessionKey',
+        sessionidplacement: 'sessionIDPlacement',
+        sessionidkey: 'sessionIDKey',
       }
       const nextExtra = { ...(xhttpExtra ?? {}) }
       const fallback = fallbackByKey[normalizedKey] ?? normalizedKey
@@ -1441,6 +1445,10 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
         xpaddingmethod: 'xPaddingMethod',
         sessionidtable: 'sessionIDTable',
         sessionidlength: 'sessionIDLength',
+        sessionplacement: 'sessionPlacement',
+        sessionkey: 'sessionKey',
+        sessionidplacement: 'sessionIDPlacement',
+        sessionidkey: 'sessionIDKey',
       }
       const nextExtra = { ...(xhttpExtra ?? {}) }
       for (const [normalizedKey, value] of Object.entries(updates)) {
@@ -1481,6 +1489,8 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
       uplinkhttpmethod: 'uplinkHTTPMethod',
       sessionplacement: 'sessionPlacement',
       sessionkey: 'sessionKey',
+      sessionidplacement: 'sessionIDPlacement',
+      sessionidkey: 'sessionIDKey',
       sessionidtable: 'sessionIDTable',
       sessionidlength: 'sessionIDLength',
       seqplacement: 'seqPlacement',
@@ -3249,6 +3259,63 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                           </div>
                         )}
 
+                        {inboundTransportType === 'xhttp' &&
+                          (() => {
+                            const sessionPlacementValue = String(
+                              (isSessionIdFieldsGated
+                                ? (getTransportMetaValue(xhttpExtra, 'sessionidplacement') ?? getTransportMetaValue(xhttpExtra, 'sessionplacement'))
+                                : (getTransportMetaValue(xhttpExtra, 'sessionplacement') ?? getTransportMetaValue(xhttpExtra, 'sessionidplacement'))) ?? '',
+                            )
+                            const sessionKeyValue = String(
+                              (isSessionIdFieldsGated
+                                ? (getTransportMetaValue(xhttpExtra, 'sessionidkey') ?? getTransportMetaValue(xhttpExtra, 'sessionkey'))
+                                : (getTransportMetaValue(xhttpExtra, 'sessionkey') ?? getTransportMetaValue(xhttpExtra, 'sessionidkey'))) ?? '',
+                            )
+                            const placementKey = isSessionIdFieldsGated ? 'sessionidplacement' : 'sessionplacement'
+                            const placementOtherKey = isSessionIdFieldsGated ? 'sessionplacement' : 'sessionidplacement'
+                            const keyKey = isSessionIdFieldsGated ? 'sessionidkey' : 'sessionkey'
+                            const keyOtherKey = isSessionIdFieldsGated ? 'sessionkey' : 'sessionidkey'
+                            return (
+                              <div className="grid gap-3 sm:grid-cols-2 sm:col-span-2">
+                                <FormItem>
+                                  <FormLabel className="text-xs font-medium">{t('hostsDialog.xhttp.sessionPlacement', { defaultValue: 'Session Placement' })}</FormLabel>
+                                  <Select
+                                    value={sessionPlacementValue === '' ? '__default' : sessionPlacementValue}
+                                    onValueChange={v => {
+                                      const value = v === '__default' ? '' : v
+                                      updateXhttpMetaBatch({ [placementKey]: value, [placementOtherKey]: undefined })
+                                    }}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="h-10">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="__default">{t('coreEditor.parityUi.selectDefault', { defaultValue: 'Default' })}</SelectItem>
+                                      <SelectItem value="path">path</SelectItem>
+                                      <SelectItem value="header">header</SelectItem>
+                                      <SelectItem value="cookie">cookie</SelectItem>
+                                      <SelectItem value="query">query</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+
+                                <FormItem>
+                                  <FormLabel className="text-xs font-medium">{t('hostsDialog.xhttp.sessionKey', { defaultValue: 'Session Key' })}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      dir="ltr"
+                                      className="h-10 text-xs"
+                                      value={sessionKeyValue}
+                                      onChange={e => updateXhttpMetaBatch({ [keyKey]: e.target.value, [keyOtherKey]: undefined })}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              </div>
+                            )
+                          })()}
+
                         {inboundTransportType === 'xhttp' && !isSessionIdTableConfirmedUnsupported &&
                           (() => {
                             const sessionIdTableValue = String(getTransportMetaValue(xhttpExtra, 'sessionidtable') ?? '')
@@ -3337,6 +3404,10 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                             normalizedTransportKey === 'xpaddingheader' ||
                             normalizedTransportKey === 'xpaddingplacement' ||
                             normalizedTransportKey === 'xpaddingmethod' ||
+                            normalizedTransportKey === 'sessionplacement' ||
+                            normalizedTransportKey === 'sessionkey' ||
+                            normalizedTransportKey === 'sessionidplacement' ||
+                            normalizedTransportKey === 'sessionidkey' ||
                             normalizedTransportKey === 'extra'
                           if (inboundTransportType === 'xhttp' && isXhttpCustomManagedField) return null
                           const isXPaddingAdvancedField =
