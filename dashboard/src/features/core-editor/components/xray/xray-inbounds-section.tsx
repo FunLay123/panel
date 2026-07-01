@@ -159,6 +159,18 @@ function getXhttpExtraRecord(transport: Record<string, unknown> | null): Record<
   return extra as Record<string, unknown>
 }
 
+// `extra.unknown` is the config-kit's forward-compat escape hatch: the compiler spreads it verbatim
+// into the compiled transport JSON (dist/core/compiler.js), so fields the kit's schema doesn't know
+// about yet (e.g. Xray 26.6.22's sessionIDTable/sessionIDLength) can round-trip without failing
+// strict validation, which rejects any unrecognized key placed directly under `extra`.
+function getXhttpExtraUnknownRecord(extra: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!extra) return null
+  const unknown = extra.unknown
+  if (unknown === undefined || unknown === null) return null
+  if (typeof unknown !== 'object' || Array.isArray(unknown)) return null
+  return unknown as Record<string, unknown>
+}
+
 // Predefined sessionIDTable aliases recognized by Xray 26.6.22+.
 const SESSION_ID_TABLE_PRESETS = ['ALPHABET', 'Alphabet', 'BASE36', 'Base62', 'HEX', 'alphabet', 'base36', 'hex', 'number']
 
@@ -173,10 +185,6 @@ const XHTTP_EXTRA_META_KEYS = new Set<string>([
   'uplinkhttpmethod',
   'sessionplacement',
   'sessionkey',
-  'sessionidplacement',
-  'sessionidkey',
-  'sessionidtable',
-  'sessionidlength',
   'seqplacement',
   'seqkey',
   'uplinkdataplacement',
@@ -1305,6 +1313,7 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
   const inboundTransport = useMemo(() => (inbound ? getInboundTransportRecord(inbound) : null), [inbound])
   const inboundTransportType = useMemo(() => (typeof inboundTransport?.type === 'string' ? inboundTransport.type : undefined), [inboundTransport])
   const xhttpExtra = useMemo(() => getXhttpExtraRecord(inboundTransport), [inboundTransport])
+  const xhttpExtraUnknown = useMemo(() => getXhttpExtraUnknownRecord(xhttpExtra), [xhttpExtra])
   const xPaddingBytesKey = useMemo(() => resolveTransportMetaKey(xhttpExtra, 'xpaddingbytes', 'xPaddingBytes'), [xhttpExtra])
   const xPaddingObfsEnabled = useMemo(() => {
     if (inboundTransportType !== 'xhttp') return false
@@ -1400,8 +1409,6 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
         xpaddingheader: 'xPaddingHeader',
         xpaddingplacement: 'xPaddingPlacement',
         xpaddingmethod: 'xPaddingMethod',
-        sessionidtable: 'sessionIDTable',
-        sessionidlength: 'sessionIDLength',
       }
       const nextExtra = { ...(xhttpExtra ?? {}) }
       const fallback = fallbackByKey[normalizedKey] ?? normalizedKey
@@ -1433,8 +1440,6 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
         xpaddingheader: 'xPaddingHeader',
         xpaddingplacement: 'xPaddingPlacement',
         xpaddingmethod: 'xPaddingMethod',
-        sessionidtable: 'sessionIDTable',
-        sessionidlength: 'sessionIDLength',
       }
       const nextExtra = { ...(xhttpExtra ?? {}) }
       for (const [normalizedKey, value] of Object.entries(updates)) {
@@ -1452,6 +1457,32 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
       patchTransport(patch)
     },
     [inboundTransportType, xhttpExtra, inboundTransport, patchTransport],
+  )
+
+  // sessionIDTable/sessionIDLength (Xray 26.6.22+) aren't in the config-kit's known-key schema yet,
+  // so unlike updateXhttpMeta they must live under extra.unknown — the kit's forward-compat escape
+  // hatch that the compiler spreads verbatim into the output (see getXhttpExtraUnknownRecord above).
+  const updateXhttpUnknownMeta = useCallback(
+    (normalizedKey: string, value: unknown) => {
+      if (inboundTransportType !== 'xhttp') return
+      const fallbackByKey: Record<string, string> = {
+        sessionidtable: 'sessionIDTable',
+        sessionidlength: 'sessionIDLength',
+      }
+      const currentUnknown = xhttpExtraUnknown ?? {}
+      const nextUnknown = { ...currentUnknown }
+      const fallback = fallbackByKey[normalizedKey] ?? normalizedKey
+      const resolved = resolveTransportMetaKey(currentUnknown, normalizedKey, fallback)
+      if (value === undefined || String(value).trim() === '') delete nextUnknown[resolved]
+      else nextUnknown[resolved] = value
+
+      const nextExtra = { ...(xhttpExtra ?? {}) }
+      if (Object.keys(nextUnknown).length > 0) nextExtra.unknown = nextUnknown
+      else delete nextExtra.unknown
+
+      patchTransport({ extra: Object.keys(nextExtra).length > 0 ? nextExtra : undefined })
+    },
+    [inboundTransportType, xhttpExtra, xhttpExtraUnknown, patchTransport],
   )
 
   useEffect(() => {
@@ -1475,10 +1506,6 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
       uplinkhttpmethod: 'uplinkHTTPMethod',
       sessionplacement: 'sessionPlacement',
       sessionkey: 'sessionKey',
-      sessionidplacement: 'sessionIDPlacement',
-      sessionidkey: 'sessionIDKey',
-      sessionidtable: 'sessionIDTable',
-      sessionidlength: 'sessionIDLength',
       seqplacement: 'seqPlacement',
       seqkey: 'seqKey',
       uplinkdataplacement: 'uplinkDataPlacement',
@@ -3240,7 +3267,7 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
 
                         {inboundTransportType === 'xhttp' &&
                           (() => {
-                            const sessionIdTableValue = String(getTransportMetaValue(xhttpExtra, 'sessionidtable') ?? '')
+                            const sessionIdTableValue = String(getTransportMetaValue(xhttpExtraUnknown, 'sessionidtable') ?? '')
                             const isPresetTable = SESSION_ID_TABLE_PRESETS.includes(sessionIdTableValue)
                             const showCustomTable = sessionIdTableCustomMode || (sessionIdTableValue !== '' && !isPresetTable)
                             const tableSelectValue = showCustomTable ? '__custom' : sessionIdTableValue === '' ? '__default' : sessionIdTableValue
@@ -3254,13 +3281,13 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                                       onValueChange={v => {
                                         if (v === '__default') {
                                           setSessionIdTableCustomMode(false)
-                                          updateXhttpMeta('sessionidtable', undefined)
+                                          updateXhttpUnknownMeta('sessionidtable', undefined)
                                         } else if (v === '__custom') {
                                           setSessionIdTableCustomMode(true)
-                                          updateXhttpMeta('sessionidtable', '')
+                                          updateXhttpUnknownMeta('sessionidtable', '')
                                         } else {
                                           setSessionIdTableCustomMode(false)
-                                          updateXhttpMeta('sessionidtable', v)
+                                          updateXhttpUnknownMeta('sessionidtable', v)
                                         }
                                       }}
                                     >
@@ -3285,7 +3312,7 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                                           className="mt-2 h-10 text-xs"
                                           dir="ltr"
                                           value={sessionIdTableValue}
-                                          onChange={e => updateXhttpMeta('sessionidtable', e.target.value)}
+                                          onChange={e => updateXhttpUnknownMeta('sessionidtable', e.target.value)}
                                           placeholder={t('hostsDialog.xhttp.sessionIdTableCustomPlaceholder', { defaultValue: 'Enter custom characters (ASCII)' })}
                                         />
                                       </FormControl>
@@ -3298,8 +3325,8 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                                       <Input
                                         dir="ltr"
                                         className="h-10 text-xs"
-                                        value={String(getTransportMetaValue(xhttpExtra, 'sessionidlength') ?? '')}
-                                        onChange={e => updateXhttpMeta('sessionidlength', e.target.value)}
+                                        value={String(getTransportMetaValue(xhttpExtraUnknown, 'sessionidlength') ?? '')}
+                                        onChange={e => updateXhttpUnknownMeta('sessionidlength', e.target.value)}
                                         placeholder={t('hostsDialog.xhttp.sessionIdLengthPlaceholder', { defaultValue: 'e.g. 22-22' })}
                                       />
                                     </FormControl>
