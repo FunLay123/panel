@@ -911,6 +911,7 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
   const updateXrayProfile = useCoreEditorStore(s => s.updateXrayProfile)
   const coreXrayVersion = useCoreEditorStore(s => s.coreXrayVersion)
   const isEchForceQueryGated = isXrayVersionAtLeast(coreXrayVersion, XRAY_FEATURE_GATES.echForceQueryRemoved)
+  const isAllowInsecureHardBlocked = isXrayVersionAtLeast(coreXrayVersion, XRAY_FEATURE_GATES.allowInsecureHardError)
   const { assertNoPersistBlockingErrors } = useXrayPersistModifyGuard()
   const [selected, setSelected] = useState(0)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -4136,6 +4137,13 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
                                     }
                                   }}
                                 />
+                                {jsonKey === 'allowInsecure' && isAllowInsecureHardBlocked && String(field.value) === 'true' && (
+                                  <p className="text-destructive text-xs leading-relaxed">
+                                    {t('coreEditor.inbound.tls.allowInsecureRemoved', {
+                                      defaultValue: "This node's Xray-core no longer builds configs with allowInsecure enabled — it will refuse to start.",
+                                    })}
+                                  </p>
+                                )}
                                 <FormMessage />
                               </FormItem>
                             )}
