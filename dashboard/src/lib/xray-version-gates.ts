@@ -29,8 +29,10 @@ export function isXrayVersionAtLeast(version: string | null | undefined, cutoff:
 }
 
 // Verified against XTLS/Xray-core release tag history — see
-// docs/superpowers/plans/2026-07-01-core-editor-xray-version-gating.md Task 1.
+// docs/superpowers/plans/2026-07-01-core-editor-xray-version-gating.md Task 1
+// and docs/superpowers/specs/2026-07-02-core-editor-sessionid-migration-design.md.
 export const XRAY_FEATURE_GATES = {
   echForceQueryRemoved: '26.6.22',
   allowInsecureHardError: '26.6.22',
+  sessionIdFieldsRenamed: '26.6.22',
 } as const

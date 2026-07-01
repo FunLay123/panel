@@ -51,8 +51,9 @@ describe('isXrayVersionAtLeast', () => {
 })
 
 describe('XRAY_FEATURE_GATES', () => {
-  it('has both gate versions defined as parseable version strings', () => {
+  it('has all gate versions defined as parseable version strings', () => {
     expect(parseXrayVersion(XRAY_FEATURE_GATES.echForceQueryRemoved)).not.toBeNull()
     expect(parseXrayVersion(XRAY_FEATURE_GATES.allowInsecureHardError)).not.toBeNull()
+    expect(parseXrayVersion(XRAY_FEATURE_GATES.sessionIdFieldsRenamed)).not.toBeNull()
   })
 })
