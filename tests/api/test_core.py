@@ -21,7 +21,7 @@ def test_core_create(access_token):
 
 
 def test_core_get_includes_xray_version(access_token):
-    """Test that GET /api/core/{id} includes xray_version, defaulting to None with no connected node."""
+    """Test that GET /api/core/{id} includes xray_version, defaulting to None when no node is attached to the core."""
 
     core = create_core(access_token, name=unique_name("xray_version_field"))
     response = client.get(

@@ -88,7 +88,12 @@ async def get_node_by_id(db: AsyncSession, node_id: int) -> Optional[Node]:
 
 async def get_xray_version_by_core_id(db: AsyncSession, core_config_id: int) -> str | None:
     return (
-        await db.execute(select(Node.xray_version).where(Node.core_config_id == core_config_id).limit(1))
+        await db.execute(
+            select(Node.xray_version)
+            .where(Node.core_config_id == core_config_id)
+            .where(Node.xray_version.isnot(None))
+            .limit(1)
+        )
     ).scalar_one_or_none()
 
 async def get_nodes(
