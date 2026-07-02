@@ -476,6 +476,42 @@ async def cleanup_nodes_simple(core_id: int, node_ids: list[int]) -> None:
             await remove_core_config(session, db_core)
 
 
+async def test_update_node_status_preserves_version_when_not_provided():
+    from app.db.crud.node import update_node_status
+
+    async with TestSession() as session:
+        core = await create_core_config(session, core_create_model(unique_name("core_preserve_version")))
+        core_id = inspect(core).identity[0]
+        node_model = NodeCreate(**node_create_payload(name=unique_name("node_preserve_version"), core_config_id=core_id))
+        db_node = await db_create_node(session, node_model)
+        node_id = inspect(db_node).identity[0]
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        await update_node_status(session, db_node, NodeStatus.connected, xray_version="26.6.1", node_version="0.5.2")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        assert db_node.xray_version == "26.6.1"
+        assert db_node.node_version == "0.5.2"
+
+        # Transition to error WITHOUT passing xray_version/node_version (the real-world
+        # call pattern from every error path in operation/node.py and jobs/node_checker.py) —
+        # the last-known version must survive.
+        await update_node_status(session, db_node, NodeStatus.error, message="Connection refused")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        assert db_node.status == NodeStatus.error
+        assert db_node.message == "Connection refused"
+        assert db_node.xray_version == "26.6.1"
+        assert db_node.node_version == "0.5.2"
+
+    async with TestSession() as session:
+        core = await session.get(CoreConfig, core_id)
+        await cleanup_nodes_simple(core_id, [node_id])
+
+
 def usage_stats_payload() -> NodeUsageStatsList:
     start = datetime(2024, 1, 1, tzinfo=timezone.utc)
     end = start + timedelta(days=1)

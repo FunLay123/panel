@@ -487,17 +487,17 @@ async def update_node_status(
     Returns:
         Node: The updated Node object.
     """
-    stmt = (
-        update(Node)
-        .where(Node.id == db_node.id)
-        .values(
-            status=status,
-            message=message,
-            xray_version=xray_version,
-            node_version=node_version,
-            last_status_change=datetime.now(timezone.utc),
-        )
-    )
+    values: dict = {
+        "status": status,
+        "message": message,
+        "last_status_change": datetime.now(timezone.utc),
+    }
+    if xray_version:
+        values["xray_version"] = xray_version
+    if node_version:
+        values["node_version"] = node_version
+
+    stmt = update(Node).where(Node.id == db_node.id).values(**values)
     await db.execute(stmt)
     await db.commit()
 
