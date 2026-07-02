@@ -28,11 +28,18 @@ export function isXrayVersionAtLeast(version: string | null | undefined, cutoff:
   return compareXrayVersion(parsedVersion, parsedCutoff) >= 0
 }
 
-// Verified against XTLS/Xray-core release tag history — see
-// docs/superpowers/plans/2026-07-01-core-editor-xray-version-gating.md Task 1
-// and docs/superpowers/specs/2026-07-02-core-editor-sessionid-migration-design.md.
+// Verified directly against XTLS/Xray-core commit-to-tag ancestry via the GitHub API
+// (`gh api repos/XTLS/Xray-core/compare/<commit>...<tag>`), not just changelog reading —
+// the two prior values below were caught reading the changelog PR as if all three
+// changes shipped together in the same release, when in fact each landed on its own date:
+//   - allowInsecure -> pinnedPeerCertSha256: commit 2c92339f, 2026-01-30.
+//     v26.1.23 lacks it, v26.1.31 has it (verified via compare ahead_by/behind_by).
+//   - echForceQuery removed: commit 1fc6850d (#6032), 2026-05-02.
+//     v26.4.25 lacks it, v26.5.3 has it.
+//   - session*->sessionID* rename + sessionIDTable/sessionIDLength: commit e10347bf (#6258), 2026-06-09.
+//     v26.6.1 lacks it, v26.6.22 has it. This one alone matches 26.6.22.
 export const XRAY_FEATURE_GATES = {
-  echForceQueryRemoved: '26.6.22',
-  allowInsecureHardError: '26.6.22',
+  echForceQueryRemoved: '26.5.3',
+  allowInsecureHardError: '26.1.31',
   sessionIdFieldsRenamed: '26.6.22',
 } as const
