@@ -54,3 +54,20 @@ graphify-out
 dashboard/*
 !dashboard/__init__.py
 !dashboard/build
+
+# Dockerfile.local (test/local image) builds the dashboard from source inside
+# the container instead of using a CI-prebuilt dashboard/build/, so it needs
+# these re-included too.
+!dashboard/package.json
+!dashboard/bun.lock
+!dashboard/src
+!dashboard/public
+!dashboard/index.html
+!dashboard/vite.config.mts
+!dashboard/tsconfig.json
+!dashboard/tsconfig.app.json
+!dashboard/tsconfig.node.json
+!dashboard/tailwind.config.js
+!dashboard/components.json
+!dashboard/react-router.config.ts
+!dashboard/custom.d.ts
