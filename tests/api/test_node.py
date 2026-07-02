@@ -512,6 +512,59 @@ async def test_update_node_status_preserves_version_when_not_provided():
         await cleanup_nodes_simple(core_id, [node_id])
 
 
+async def test_bulk_update_node_status_preserves_version_when_empty():
+    from app.db.crud.node import bulk_update_node_status, update_node_status
+
+    async with TestSession() as session:
+        core = await create_core_config(session, core_create_model(unique_name("core_bulk_preserve")))
+        core_id = inspect(core).identity[0]
+        node_a_model = NodeCreate(**node_create_payload(name=unique_name("node_bulk_a"), core_config_id=core_id))
+        node_b_model = NodeCreate(**node_create_payload(name=unique_name("node_bulk_b"), core_config_id=core_id))
+        db_node_a = await db_create_node(session, node_a_model)
+        db_node_b = await db_create_node(session, node_b_model)
+        node_a_id = inspect(db_node_a).identity[0]
+        node_b_id = inspect(db_node_b).identity[0]
+
+    async with TestSession() as session:
+        db_node_a = await session.get(Node, node_a_id)
+        db_node_b = await session.get(Node, node_b_id)
+        await update_node_status(session, db_node_a, NodeStatus.connected, xray_version="26.6.1", node_version="0.5.2")
+        await update_node_status(session, db_node_b, NodeStatus.connected, xray_version="26.5.3", node_version="0.5.1")
+
+    async with TestSession() as session:
+        # node_a: real error transition with a fresh reported version (should overwrite).
+        # node_b: error transition without a known version (should preserve "26.5.3").
+        await bulk_update_node_status(
+            session,
+            [
+                {
+                    "node_id": node_a_id,
+                    "status": NodeStatus.error,
+                    "message": "boom",
+                    "xray_version": "26.6.22",
+                    "node_version": "0.5.3",
+                },
+                {
+                    "node_id": node_b_id,
+                    "status": NodeStatus.error,
+                    "message": "boom",
+                    "xray_version": "",
+                    "node_version": "",
+                },
+            ],
+        )
+
+    async with TestSession() as session:
+        db_node_a = await session.get(Node, node_a_id)
+        db_node_b = await session.get(Node, node_b_id)
+        assert db_node_a.xray_version == "26.6.22"
+        assert db_node_a.node_version == "0.5.3"
+        assert db_node_b.xray_version == "26.5.3"
+        assert db_node_b.node_version == "0.5.1"
+
+        await cleanup_nodes_simple(core_id, [node_a_id, node_b_id])
+
+
 def usage_stats_payload() -> NodeUsageStatsList:
     start = datetime(2024, 1, 1, tzinfo=timezone.utc)
     end = start + timedelta(days=1)

@@ -546,8 +546,14 @@ async def bulk_update_node_status(
         .values(
             status=bindparam("status"),
             message=bindparam("message"),
-            xray_version=bindparam("xray_version"),
-            node_version=bindparam("node_version"),
+            xray_version=case(
+                (bindparam("xray_version") != "", bindparam("xray_version")),
+                else_=Node.xray_version,
+            ),
+            node_version=case(
+                (bindparam("node_version") != "", bindparam("node_version")),
+                else_=Node.node_version,
+            ),
             last_status_change=bindparam("now"),
         )
     )
