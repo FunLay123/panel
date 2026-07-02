@@ -565,6 +565,35 @@ async def test_bulk_update_node_status_preserves_version_when_empty():
         await cleanup_nodes_simple(core_id, [node_a_id, node_b_id])
 
 
+async def test_get_xray_version_by_core_id_ignores_status():
+    from app.db.crud.node import get_xray_version_by_core_id, update_node_status
+
+    async with TestSession() as session:
+        core = await create_core_config(session, core_create_model(unique_name("core_version_lookup")))
+        core_id = inspect(core).identity[0]
+        node_model = NodeCreate(**node_create_payload(name=unique_name("node_version_lookup"), core_config_id=core_id))
+        db_node = await db_create_node(session, node_model)
+        node_id = inspect(db_node).identity[0]
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        await update_node_status(session, db_node, NodeStatus.connected, xray_version="26.6.1", node_version="0.5.2")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        # Node errors out but keeps its last-known version (Task 1's behavior).
+        await update_node_status(session, db_node, NodeStatus.error, message="Connection refused")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        assert db_node.status == NodeStatus.error
+
+        version = await get_xray_version_by_core_id(session, core_id)
+        assert version == "26.6.1"
+
+        await cleanup_nodes_simple(core_id, [node_id])
+
+
 def usage_stats_payload() -> NodeUsageStatsList:
     start = datetime(2024, 1, 1, tzinfo=timezone.utc)
     end = start + timedelta(days=1)
