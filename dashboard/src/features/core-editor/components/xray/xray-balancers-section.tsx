@@ -241,6 +241,7 @@ export function XrayBalancersSection({ headerAddPulse, headerAddEpoch }: XrayBal
   const { t } = useTranslation()
   const dir = useDirDetection()
   const profile = useCoreEditorStore(s => s.xrayProfile)
+  const coreXrayVersion = useCoreEditorStore(s => s.coreXrayVersion)
   const updateXrayProfile = useCoreEditorStore(s => s.updateXrayProfile)
   const { assertNoPersistBlockingErrors } = useXrayPersistModifyGuard()
   const profileTagOptions = useMemo<XrayProfileTagOptions>(
@@ -271,7 +272,7 @@ export function XrayBalancersSection({ headerAddPulse, headerAddEpoch }: XrayBal
     return balancers[selected]
   }, [dialogMode, draftBalancer, balancers, selected])
 
-  const balancerParityFields = useMemo(() => getGeneratedRoutingBalancerFields(), [])
+  const balancerParityFields = useMemo(() => getGeneratedRoutingBalancerFields({ xrayVersion: coreXrayVersion ?? undefined }), [coreXrayVersion])
   const strategyTypeLabel = useMemo(() => {
     return t('coreEditor.balancer.strategy', { defaultValue: 'Strategy' })
   }, [t])

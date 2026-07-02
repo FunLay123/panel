@@ -942,7 +942,7 @@ export function XrayInboundsSection({ headerAddPulse, headerAddEpoch }: XrayInbo
   }, [profile, dialogMode, draftInbound, selected])
 
   const visibility = useMemo(() => (inbound ? getInboundFieldVisibility(inbound) : null), [inbound])
-  const caps = useMemo(() => getInboundFormCapabilities(), [])
+  const caps = useMemo(() => getInboundFormCapabilities({ xrayVersion: coreXrayVersion ?? undefined }), [coreXrayVersion])
   const protocolSelectOptions = useMemo(() => {
     const visibleProtocols = caps.protocolOrder.filter(p => caps.protocols[p] && p !== 'dokodemo-door')
     // Keep legacy value selectable when editing an existing legacy inbound.
