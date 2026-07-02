@@ -635,6 +635,63 @@ async def test_get_xray_version_by_core_id_prefers_known_version_over_never_conn
         await cleanup_nodes_simple(core_id, [node_a_id, node_b_id])
 
 
+async def test_modify_node_status_toggle_preserves_version():
+    from app.db.crud.node import modify_node, update_node_status
+
+    async with TestSession() as session:
+        core = await create_core_config(session, core_create_model(unique_name("core_modify_status_only")))
+        core_id = inspect(core).identity[0]
+        node_model = NodeCreate(**node_create_payload(name=unique_name("node_modify_status_only"), core_config_id=core_id))
+        db_node = await db_create_node(session, node_model)
+        node_id = inspect(db_node).identity[0]
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        await update_node_status(session, db_node, NodeStatus.connected, xray_version="26.6.1", node_version="0.5.2")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        # Pure status toggle: disable the node without changing address/port/etc.
+        await modify_node(session, db_node, NodeModify(status=NodeStatus.disabled))
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        assert db_node.status == NodeStatus.disabled
+        assert db_node.xray_version == "26.6.1"
+        assert db_node.node_version == "0.5.2"
+
+        await cleanup_nodes_simple(core_id, [node_id])
+
+
+async def test_modify_node_address_change_clears_version():
+    from app.db.crud.node import modify_node, update_node_status
+
+    async with TestSession() as session:
+        core = await create_core_config(session, core_create_model(unique_name("core_modify_address_change")))
+        core_id = inspect(core).identity[0]
+        node_model = NodeCreate(**node_create_payload(name=unique_name("node_modify_address_change"), core_config_id=core_id))
+        db_node = await db_create_node(session, node_model)
+        node_id = inspect(db_node).identity[0]
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        await update_node_status(session, db_node, NodeStatus.connected, xray_version="26.6.1", node_version="0.5.2")
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        # Real identity change: pointing at a different address should reset the known version,
+        # since the panel can no longer assume the same physical instance is on the other end.
+        await modify_node(session, db_node, NodeModify(address="different-node.example.com"))
+
+    async with TestSession() as session:
+        db_node = await session.get(Node, node_id)
+        assert db_node.address == "different-node.example.com"
+        assert db_node.xray_version is None
+        assert db_node.node_version is None
+
+        await cleanup_nodes_simple(core_id, [node_id])
+
+
 def usage_stats_payload() -> NodeUsageStatsList:
     start = datetime(2024, 1, 1, tzinfo=timezone.utc)
     end = start + timedelta(days=1)

@@ -436,6 +436,9 @@ async def remove_node(db: AsyncSession, db_node: Node) -> None:
     await db.commit()
 
 
+CONNECTION_IDENTITY_FIELDS = ("address", "port", "server_ca", "connection_type", "api_key")
+
+
 async def modify_node(db: AsyncSession, db_node: Node, modify: NodeModify) -> Node:
     """
     modify an existing node with new information.
@@ -453,12 +456,17 @@ async def modify_node(db: AsyncSession, db_node: Node, modify: NodeModify) -> No
     if "proxy_url" in modify.model_fields_set and modify.proxy_url is None:
         node_data["proxy_url"] = None
 
+    connection_identity_changed = any(
+        field in node_data and getattr(db_node, field) != node_data[field] for field in CONNECTION_IDENTITY_FIELDS
+    )
+
     for key, value in node_data.items():
         setattr(db_node, key, value)
 
-    db_node.xray_version = None
     db_node.message = None
-    db_node.node_version = None
+    if connection_identity_changed:
+        db_node.xray_version = None
+        db_node.node_version = None
 
     if db_node.is_limited:
         db_node.status = NodeStatus.limited
