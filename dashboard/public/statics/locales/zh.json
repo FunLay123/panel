@@ -1262,6 +1262,12 @@
       "uplinkHttpMethod": "Uplink HTTP Method",
       "sessionPlacement": "Session Placement",
       "sessionKey": "Session Key",
+      "sessionIdTable": "Session ID 字符表",
+      "sessionIdTablePlaceholder": "例如 Base62、HEX 或自定义字符",
+      "sessionIdLength": "Session ID 长度",
+      "sessionIdLengthPlaceholder": "例如 8 或 8-16",
+      "customValue": "自定义",
+      "sessionIdTableCustomPlaceholder": "输入自定义字符 (ASCII)",
       "seqPlacement": "Seq Placement",
       "seqKey": "Seq Key",
       "uplinkDataPlacement": "Uplink Data Placement",
@@ -2018,7 +2024,10 @@
     "updating": "更新中...",
     "updateAvailable": "有更新可用",
     "prerelease": "预发布版本",
-    "loadingReleases": "正在加载版本..."
+    "loadingReleases": "正在加载版本...",
+    "breakingChangeTitle": "Xray 26.6.22+ 的重大变更",
+    "breakingChangeWarning": "从 Xray 26.6.22 开始，xhttp 参数 “sessionPlacement” 和 “sessionKey” 已重命名为 “sessionIDPlacement” 和 “sessionIDKey”。安装新版本时，服务器配置会自动迁移。但是，订阅中 xhttp 入站仍包含 sessionPlacement/sessionKey 的用户在升级后将无法连接到服务器，直到他们重新导入订阅。是否继续？",
+    "breakingChangeConfirm": "我已了解，仍然更新"
   },
   "theme": {
     "title": "主题",

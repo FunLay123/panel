@@ -1,0 +1,47 @@
+# Local/test image: builds the modified dashboard (bun) + backend, so frontend
+# changes are baked in. Use with docker-compose.test.yml. Not for production.
+ARG PYTHON_VERSION=3.14
+
+# ---- Backend deps ----
+FROM ghcr.io/astral-sh/uv:python$PYTHON_VERSION-bookworm-slim AS builder
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc python3-dev libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+ENV UV_PYTHON_DOWNLOADS=0
+WORKDIR /build
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
+ADD . /build
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+# ---- Dashboard build (Vite via bun) ----
+FROM oven/bun:1 AS dashboard
+WORKDIR /dash
+COPY dashboard/ /dash/
+RUN bun install
+# VITE_BASE_API is baked into the build: the URL the browser uses to reach the API.
+ARG VITE_BASE_API="/"
+RUN VITE_BASE_API="$VITE_BASE_API" bun run build --outDir build --assetsDir statics \
+    && cp build/index.html build/404.html
+
+# ---- Final image ----
+FROM python:$PYTHON_VERSION-slim-bookworm
+COPY --from=builder /build /code
+# Prebuilt dashboard so the app serves it without needing bun at runtime.
+COPY --from=dashboard /dash/build /code/dashboard/build
+WORKDIR /code
+ENV PATH="/code/.venv/bin:$PATH"
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+COPY cli_wrapper.sh /usr/bin/pasarguard-cli
+RUN chmod +x /usr/bin/pasarguard-cli
+COPY tui_wrapper.sh /usr/bin/pasarguard-tui
+RUN chmod +x /usr/bin/pasarguard-tui
+COPY healthcheck.sh /code/healthcheck.sh
+RUN chmod +x /code/healthcheck.sh
+RUN chmod +x /code/start.sh
+ENTRYPOINT ["/code/start.sh"]
