@@ -102,6 +102,7 @@ export interface CoreEditorStoreState {
   hydrated: boolean
   isNew: boolean
   coreId: number | null
+  coreXrayVersion: string | null
   coreName: string
   kind: CoreKind
   restartNodes: boolean
@@ -146,6 +147,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
   hydrated: false,
   isNew: false,
   coreId: null,
+  coreXrayVersion: null,
   coreName: '',
   kind: 'xray',
   restartNodes: true,
@@ -180,6 +182,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
           hydrated: true,
           isNew: false,
           coreId: core.id,
+          coreXrayVersion: core.xray_version ?? null,
           coreName: core.name,
           kind,
           restartNodes: nav.restartNodes,
@@ -204,6 +207,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
         hydrated: true,
         isNew: false,
         coreId: core.id,
+        coreXrayVersion: core.xray_version ?? null,
         coreName: core.name,
         kind,
         restartNodes: nav.restartNodes,
@@ -229,6 +233,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
       hydrated: true,
       isNew: false,
       coreId: core.id,
+      coreXrayVersion: core.xray_version ?? null,
       coreName: core.name,
       kind,
       restartNodes: nav.restartNodes,
@@ -255,6 +260,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
         hydrated: true,
         isNew: true,
         coreId: null,
+        coreXrayVersion: null,
         coreName: name,
         kind,
         restartNodes: true,
@@ -279,6 +285,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
       hydrated: true,
       isNew: true,
       coreId: null,
+      coreXrayVersion: null,
       coreName: name,
       kind,
       restartNodes: true,
@@ -303,6 +310,7 @@ export const useCoreEditorStore = create<CoreEditorStoreState>((set, get) => ({
       hydrated: false,
       isNew: false,
       coreId: null,
+      coreXrayVersion: null,
       coreName: '',
       kind: 'xray',
       restartNodes: true,
