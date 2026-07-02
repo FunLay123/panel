@@ -2501,6 +2501,9 @@
       },
       "tlsCertificateServeOnNode": "在节点提供服务",
       "tlsCertificateServeOnNodeHint": "证书文件仅在节点上使用；服务器不会为 SNI 读取这些文件。",
+      "tls": {
+        "allowInsecureRemoved": "该节点的 Xray-core 已不再构建启用 allowInsecure 的配置——它将拒绝启动。"
+      },
       "tlsCertificates": {
         "sectionLabel": "证书",
         "emptyHint": "暂无证书。点击 + 添加。",

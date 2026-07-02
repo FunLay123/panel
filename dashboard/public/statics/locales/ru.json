@@ -2430,6 +2430,9 @@
       },
       "tlsCertificateServeOnNode": "Использовать на ноде",
       "tlsCertificateServeOnNodeHint": "Файлы сертификата используются только на ноде; сервер не читает их для SNI.",
+      "tls": {
+        "allowInsecureRemoved": "Xray-core этой ноды больше не собирает конфиги с включённым allowInsecure — запуск будет отклонён."
+      },
       "tlsCertificates": {
         "sectionLabel": "Сертификаты",
         "emptyHint": "Сертификатов пока нет. Нажмите +, чтобы добавить.",

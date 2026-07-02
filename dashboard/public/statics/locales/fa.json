@@ -2457,6 +2457,9 @@
       },
       "tlsCertificateServeOnNode": "سرو روی نود",
       "tlsCertificateServeOnNodeHint": "فایل‌های گواهی فقط روی نود استفاده می‌شوند؛ سرور آن‌ها را برای SNI نمی‌خواند.",
+      "tls": {
+        "allowInsecureRemoved": "Xray-core این نود دیگر پیکربندی‌هایی با allowInsecure فعال نمی‌سازد — اجرا نخواهد شد."
+      },
       "tlsCertificates": {
         "sectionLabel": "گواهی‌ها",
         "emptyHint": "هنوز گواهی‌ای نیست. برای افزودن روی + کلیک کنید.",

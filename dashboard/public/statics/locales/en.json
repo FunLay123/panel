@@ -2544,6 +2544,9 @@
       },
       "tlsCertificateServeOnNode": "Serve on node",
       "tlsCertificateServeOnNodeHint": "Certificate files are only used on the node; the server will not read them for SNI.",
+      "tls": {
+        "allowInsecureRemoved": "This node's Xray-core no longer builds configs with allowInsecure enabled — it will refuse to start."
+      },
       "tlsCertificates": {
         "sectionLabel": "Certificates",
         "emptyHint": "No certificates yet. Click + to add one.",
