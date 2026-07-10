@@ -110,6 +110,8 @@ export interface HostFormValues {
       uplink_http_method?: string
       session_placement?: string
       session_key?: string
+      session_id_table?: string
+      session_id_length?: string
       seq_placement?: string
       seq_key?: string
       uplink_data_placement?: string
@@ -178,6 +180,8 @@ const transportSettingsSchema = z
         uplink_http_method: z.string().nullish().optional(),
         session_placement: z.string().nullish().optional(),
         session_key: z.string().nullish().optional(),
+        session_id_table: z.string().nullish().optional(),
+        session_id_length: z.string().nullish().optional(),
         seq_placement: z.string().nullish().optional(),
         seq_key: z.string().nullish().optional(),
         uplink_data_placement: z.string().nullish().optional(),
